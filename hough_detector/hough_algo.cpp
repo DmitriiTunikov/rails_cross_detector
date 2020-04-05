@@ -88,6 +88,10 @@ void HoughDetector::solve() {
     int cur_size = 0;
     const int diff_eps = 5;
 
+
+    cv::Mat all_lines;
+    m_image.copyTo(all_lines);
+
     int q = -1;
     while (true) {
         q++;
@@ -97,13 +101,13 @@ void HoughDetector::solve() {
             break;
 
         std::vector<cv_supp::Line> cur_lines = get_lines_on_cropped(cur_y - cur_size, cur_y);
-        line(m_image, Point2i(0, cur_y), Point2i(m_image.cols, cur_y), Scalar(255, 0, 0), 1);
+        line(all_lines, Point2i(0, cur_y), Point2i(m_image.cols, cur_y), Scalar(255, 0, 0), 1);
 
         std::map<int, std::vector<CellPtr>> new_cells_map;
         std::vector<CellPtr> cur_lines_as_cells;
-        std::vector<CellPtr> prev_lines_as_cells = m_grid.size() > 0 ? m_grid[m_grid.size() - 1] : std::vector<CellPtr>();
+        std::vector<CellPtr> prev_lines_as_cells = !m_grid.empty() ? m_grid[m_grid.size() - 1] : std::vector<CellPtr>();
         for (cv_supp::Line &line : cur_lines) {
-            cv::line(m_image, line.cartesLine.max, line.cartesLine.min, Scalar(0, 0, 255), 1);
+            cv::line(all_lines, line.cartesLine.max, line.cartesLine.min, Scalar(0, 0, 255), 1);
 
             CellPtr line_as_cell = std::make_shared<Cell>(line, cur_y - cur_size, cur_y);
 
@@ -149,7 +153,10 @@ void HoughDetector::solve() {
             }
         }
     }
+
+    imshow("all lines", all_lines);
 }
+
 
 std::vector<cv_supp::Line> HoughDetector::get_lines_on_cropped(int y_min, int y_max) {
     std::vector<cv_supp::Line> res_lines;
@@ -183,7 +190,7 @@ std::vector<cv_supp::Line> HoughDetector::get_lines_on_cropped(int y_min, int y_
         for (int j = i + 1; j < cur_size; j++){
             cv_supp::CartesLine& line_j = cartesLines[j];
 
-            if (math_utils::get_diff(line_i.max.x, line_j.max.x) < m_x_didd && math_utils::get_diff(line_i.min.x, line_j.min.x) < m_x_didd) {
+            if (math_utils::get_diff(line_i.max.x, line_j.max.x) < m_x_diff && math_utils::get_diff(line_i.min.x, line_j.min.x) < m_x_diff) {
                 same_lines_count++;
                 res_x1 += line_j.max.x;
                 res_x2 += line_j.min.x;

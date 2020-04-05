@@ -16,7 +16,7 @@ public:
     std::vector<cv::Point2i> get_cross_result();
     void draw_cross_res();
 private:
-    const int m_x_didd = 10;
+    const int m_x_diff = 10;
     constexpr static const float m_parallel_cos_diff = 0.3;
 
     struct Cell {
