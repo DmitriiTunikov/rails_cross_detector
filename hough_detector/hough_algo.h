@@ -15,6 +15,7 @@ public:
 
     std::vector<cv::Point2i> get_cross_result();
     void draw_cross_res();
+    void save_results(const std::string& path_to_file);
 private:
     const int m_x_diff = 10;
     constexpr static const float m_parallel_cos_diff = 0.3;
@@ -35,6 +36,7 @@ private:
     using CellPtr = std::shared_ptr<Cell>;
     std::vector<std::vector<CellPtr>> m_grid;
     cv::Mat m_image;
+    cv::Mat m_original_image;
     int m_canny_treshhold1;
     int m_canny_treshhold2;
     int m_max_strip_len;

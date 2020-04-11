@@ -9,7 +9,14 @@
 #include <string>
 
 namespace files_utils {
-    std::vector<std::string> get_files_from_dir(std::string dir_name);
+    struct FileName {
+        std::string path;
+        std::string name;
+    };
+
+    std::vector<FileName> get_files_from_dir(std::string dir_name);
+    void remove_dir(const std::string& dir_path);
+    void create_dir(const std::string& dir_path);
 };
 
 

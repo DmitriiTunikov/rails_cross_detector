@@ -9,6 +9,35 @@
 using namespace cv;
 using namespace std;
 
+void run_test(int argc, char** argv) {
+    if (argc < 3) {
+        std::cout << "Wrong arguments count, program accept 2 arguments: " <<
+                  R"(path_to_images_dir path_to_results_dir)" << std::endl;
+
+        throw std::runtime_error(reinterpret_cast<const char *>("wrong input args"));
+    }
+
+    int canny_treashhold1 = 150, canny_treashhold2 = 250;
+
+    string images_dir = argv[1], results_dir = argv[2];
+    files_utils::remove_dir(results_dir);
+    files_utils::create_dir(results_dir);
+
+    vector<files_utils::FileName> image_file_names = files_utils::get_files_from_dir(images_dir);
+    for (files_utils::FileName& image_file_name : image_file_names) {
+        cv::Mat image = imread(image_file_name.path, IMREAD_COLOR);
+
+        //get file name without file extention
+        stringstream ss(image_file_name.name);
+        string file_name;
+        std::getline(ss, file_name, '.');
+
+        HoughDetector detector(image, canny_treashhold1, canny_treashhold2, 30, 7);
+        detector.get_cross_result();
+        detector.save_results(results_dir + "/" + file_name + ".txt");
+    }
+}
+
 int main(int argc, char** argv) {
     if (argc < 2)
     {
@@ -17,6 +46,12 @@ int main(int argc, char** argv) {
 
         return -1;
     }
+    if (argc > 2)
+    {
+        run_test(argc, argv);
+        return 0;
+    }
+
     std::string file_name = std::string(argv[1]);
 
     Mat image, gray_img, canny_res;
@@ -28,15 +63,6 @@ int main(int argc, char** argv) {
     }
 
     cv::cvtColor(image, gray_img, COLOR_BGR2GRAY);
-
-    //crop 1/5 of iamge
-    cv::Rect crop(Point(0, image.rows / 5), Point(image.cols, image.rows));
-    image = image(crop);
-
-    //Blur the image with 5x5 Gaussian kernel
-//    Mat image_blurred_with_5x5_kernel;
-//    GaussianBlur(image, image_blurred_with_5x5_kernel, Size(5, 5), 0);
-
     int canny_treashhold1 = 150, canny_treashhold2 = 250;
     cv::Canny(image, canny_res, canny_treashhold1, canny_treashhold2);
     std::chrono::milliseconds start_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
