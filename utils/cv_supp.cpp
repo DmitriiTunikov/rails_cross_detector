@@ -151,12 +151,8 @@ cv_supp::CartesLine cv_supp::from_polar_to_cartesian(const cv::Vec2f &line, int 
     cartesLine.max.y = y_max;
     cartesLine.min.y = y_min;
 
-    double tang = b / a;
-    double diff = (cartesLine.max.y - y0);
-    double before_round = x0 - tang * diff;
-//x0 - std::tan(theta) * (cartesLine.max.y - y0)
-    cartesLine.max.x = cvRound(before_round);
-    cartesLine.min.x = cvRound(x0 - std::tan(theta) * (cartesLine.min.y - y0));
+    cartesLine.max.x = cvRound(x0 -  b / a * (cartesLine.max.y - y0));
+    cartesLine.min.x = cvRound(x0 - b / a * (cartesLine.min.y - y0));
 
     return cartesLine;
 }

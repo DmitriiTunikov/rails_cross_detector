@@ -17,7 +17,7 @@ void run_test(int argc, char** argv) {
         throw std::runtime_error(reinterpret_cast<const char *>("wrong input args"));
     }
 
-    int canny_treashhold1 = 150, canny_treashhold2 = 250;
+    int canny_treashhold1 = 130, canny_treashhold2 = 230;
 
     string images_dir = argv[1], results_dir = argv[2];
     files_utils::remove_dir(results_dir);
@@ -26,19 +26,31 @@ void run_test(int argc, char** argv) {
     vector<files_utils::FileName> image_file_names = files_utils::get_files_from_dir(images_dir);
     for (files_utils::FileName& image_file_name : image_file_names) {
         cv::Mat image = imread(image_file_name.path, IMREAD_COLOR);
+        cv::Mat gray_img;
+        cv::cvtColor(image, gray_img, COLOR_BGR2GRAY);
+        cv::Mat otsu;
+        double otsu_thresh_val = cv::threshold(gray_img, otsu, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+        double high_thresh_val  = otsu_thresh_val, lower_thresh_val = otsu_thresh_val * 0.5;
 
         //get file name without file extention
         stringstream ss(image_file_name.name);
         string file_name;
         std::getline(ss, file_name, '.');
 
-        HoughDetector detector(image, canny_treashhold1, canny_treashhold2, 30, 7);
-        detector.get_cross_result();
+        HoughDetector detector(gray_img, lower_thresh_val, high_thresh_val, 20, 7);
+        detector.get_cross_result(); 
         detector.save_results(results_dir + "/" + file_name + ".txt");
     }
 }
 
 int main(int argc, char** argv) {
+    std::vector<int> kek{1,2 ,3};
+
+    for (auto it = kek.begin(); it != kek.end(); it++) {
+        if (*it == 2)
+            kek.erase(it);
+    }
+
     if (argc < 2)
     {
         std::cout << "Wrong arguments count, program accept one argument: " <<
@@ -63,19 +75,19 @@ int main(int argc, char** argv) {
     }
 
     cv::cvtColor(image, gray_img, COLOR_BGR2GRAY);
-    int canny_treashhold1 = 150, canny_treashhold2 = 250;
-    cv::Canny(image, canny_res, canny_treashhold1, canny_treashhold2);
+    int canny_treashhold1 = 130, canny_treashhold2 = 230;
     std::chrono::milliseconds start_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
 
-    HoughDetector detector(image, canny_treashhold1, canny_treashhold2, 30, 7);
+    cv::Mat otsu;
+    double otsu_thresh_val = cv::threshold(gray_img, otsu, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+    double high_thresh_val  = otsu_thresh_val, lower_thresh_val = otsu_thresh_val * 0.5;
+
+    HoughDetector detector(image, lower_thresh_val, high_thresh_val, 20, 7);
     detector.get_cross_result();
     detector.draw_cross_res();
 
     std::chrono::milliseconds diff = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()) - start_time;
     std::cout << "time: " << diff.count() << "ms" << std::endl;
-
-    imshow("original", image);
-    imshow("canny", canny_res);
 
     waitKey(0);
 

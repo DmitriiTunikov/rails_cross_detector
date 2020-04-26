@@ -17,25 +17,31 @@ public:
     void draw_cross_res();
     void save_results(const std::string& path_to_file);
 private:
-    const int m_x_diff = 10;
-    constexpr static const float m_parallel_cos_diff = 0.3;
+    constexpr static const float m_not_parallel_cos_diff = 0.3;
+    constexpr static const float m_parallel_cos_diff = 0.2;
+    constexpr static const int m_approximate_diff = 10;
 
     struct Cell {
         cv_supp::Line line;
         std::vector<std::shared_ptr<Cell>> neighs;
+        std::vector<std::shared_ptr<Cell>> parents;
         int y_min;
         int y_max;
         bool has_parent;
-        explicit Cell(const cv_supp::Line& line_, const int y_min_, const int y_max_) : line(line_), y_min(y_min_), y_max(y_max_), has_parent(false) {};
+        bool has_intersection;
+        explicit Cell(const cv_supp::Line& line_, const int y_min_, const int y_max_) : line(line_), y_min(y_min_), y_max(y_max_), has_parent(false),
+                                                                                        has_intersection(false) {};
 
-        bool has_same_direction_neigh();
-        std::shared_ptr<Cell> get_same_direction_neigh();
+        bool has_same_direction(std::vector<std::shared_ptr<Cell>> elems, double same_dir_diff = m_parallel_cos_diff);
+        std::shared_ptr<Cell> get_same_direction(std::vector<std::shared_ptr<Cell>> elems);
         static bool is_different_direction_lines(std::shared_ptr<Cell> c1, std::shared_ptr<Cell> c2);
     };
 
     using CellPtr = std::shared_ptr<Cell>;
     std::vector<std::vector<CellPtr>> m_grid;
+    cv::Mat m_all_lines;
     cv::Mat m_image;
+    cv::Mat m_canny_image;
     cv::Mat m_original_image;
     int m_canny_treshhold1;
     int m_canny_treshhold2;
@@ -46,16 +52,11 @@ private:
     void solve();
 
     std::vector<cv_supp::Line> get_lines_on_cropped(int y_min, int y_max);
-};
-
-namespace hough_algo {
-    void find_lines(cv::Mat& image, int crop_count, int canny_treashhold1, int canny_treashhold2);
-
-    std::vector<cv::Mat> get_cropped_images(const cv::Mat& image, int crop_count);
-
-    void find_lines_on_cropped(std::vector<cv::Mat>& crop_images, int canny_treashhold1, int canny_treashhold2);
-
-    void draw_lines(const std::vector<cv::Vec2f>& lines, cv::Mat& image);
+    void add_result_point(const cv::Point2i& point);
+    bool is_intersection_neighs(CellPtr c1, CellPtr c2, int same_direction_depth, int neighs_check_depth,
+            HoughDetector::CellPtr came_from1 = CellPtr(), HoughDetector::CellPtr came_from2 = CellPtr());
+    static bool is_same_direction_lines(cv_supp::Line l1, cv_supp::Line l2, double same_dir_diff = m_parallel_cos_diff);
+    int get_size_by_y(int min_len, int max_len, int y);
 };
 
 
