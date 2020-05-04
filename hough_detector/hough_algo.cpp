@@ -12,6 +12,7 @@
 #include <fstream>
 
 using namespace cv;
+bool need_to_print = false;
 
 HoughDetector::HoughDetector(cv::Mat &image, int canny_treshhold1, int canny_treshhold2, int max_strip_len,
                              int min_strip_len) : m_canny_treshhold1(canny_treshhold1), m_canny_treshhold2(canny_treshhold2),
@@ -25,7 +26,7 @@ HoughDetector::HoughDetector(cv::Mat &image, int canny_treshhold1, int canny_tre
     //make canny edge detection and remove all horisontal lines
     Canny(m_image, m_canny_image, canny_treshhold1, canny_treshhold2);
 
-    cv_supp::remove_horizontal_edges(m_canny_image);
+//    cv_supp::remove_horizontal_edges(m_canny_image);
 
     imshow("canny image", m_canny_image);
 }
@@ -69,8 +70,8 @@ void HoughDetector::solve() {
 
             CellPtr cur_line_as_cell = std::make_shared<Cell>(line, cur_y - cur_size, cur_y);
             for (CellPtr prev_line_as_cell : prev_lines_as_cells) {
-                //const int diff_eps = 3;
-                if (abs(cur_line_as_cell->line.cartesLine.max.x - prev_line_as_cell->line.cartesLine.min.x) < get_size_by_y(3, 5, cur_y)) {
+                if (abs(cur_line_as_cell->line.cartesLine.max.x - prev_line_as_cell->line.cartesLine.min.x) <
+                get_size_by_y(m_min_approximate_diff, m_max_approximate_diff, cur_y)) {
                     prev_line_as_cell->neighs.push_back(cur_line_as_cell);
                     cur_line_as_cell->parents.push_back(prev_line_as_cell);
                     cur_line_as_cell->has_parent = true;
@@ -88,8 +89,12 @@ void HoughDetector::solve() {
     for (int i = 0; i < m_grid.size() - 2; i++) {
         for (int cell_idx = 0; cell_idx < m_grid[i].size(); cell_idx++) {
             CellPtr cur_cell = m_grid[i][cell_idx];
-            if (cur_cell->line.cartesLine.min.x > 400 && cur_cell->line.cartesLine.min.x < 405 && cur_cell->line.cartesLine.min.y == 259)
-                int a = 2;
+            need_to_print = false;
+            if (cur_cell->line.cartesLine.max.x == 374 && cur_cell->line.cartesLine.max.y == 127)
+            {
+                need_to_print = true;
+                cur_cell->line.print_cartes();
+            }
 
 //            if (!cur_cell->has_same_direction(cur_cell->parents, m_parallel_cos_diff))
 //                continue;
@@ -99,13 +104,16 @@ void HoughDetector::solve() {
             if (neighs.size() > 1) {
                 for (int k = 0; k < neighs.size(); k++) {
                     for (int m = k + 1; m < neighs.size(); m++) {
-//                        if (is_same_direction_lines(cur_cell->line, neighs[k]->line) ||
-//                            is_same_direction_lines(cur_cell->line, neighs[m]->line)) {
+                        if (need_to_print){
+                            std::cout << "neighs: " << std::endl;
+                        }
                         if (is_intersection_neighs(neighs[k], neighs[m], 2, 2)) {
                             add_result_point(cur_cell->line.cartesLine.min);
                             cv::line(m_all_lines, cur_cell->line.cartesLine.min, cur_cell->line.cartesLine.max,
                                      Scalar(255, 255, 255));
                         }
+                        if (need_to_print)
+                            std::cout << std::endl;
                     }
                 }
             }
@@ -124,7 +132,7 @@ std::vector<cv_supp::Line> HoughDetector::get_lines_on_cropped(int y_min, int y_
 
     //find lines by hough
     std::vector<Vec2f> lines;
-    HoughLines(cur_canny_image, lines, 1, CV_PI / 180, (y_max - y_min) * 2 / 3, 0, 0, -CV_PI / 3.5, CV_PI / 3.5);
+    HoughLines(cur_canny_image, lines, 1, CV_PI / 180, (y_max - y_min) * 2 / 3, 0, 0, -CV_PI / 3, CV_PI / 3);
 
     //conver to cartesian
     std::vector<cv_supp::CartesLine> cartesLines;
@@ -135,7 +143,7 @@ std::vector<cv_supp::Line> HoughDetector::get_lines_on_cropped(int y_min, int y_
     }
 
     //approximate same lines by only one line
-    /*
+
     int cur_size = cartesLines.size();
     for (int i = 0; i < cur_size; i++) {
         cv_supp::CartesLine& line_i = cartesLines[i];
@@ -146,7 +154,8 @@ std::vector<cv_supp::Line> HoughDetector::get_lines_on_cropped(int y_min, int y_
         for (int j = i + 1; j < cur_size; j++){
             cv_supp::CartesLine& line_j = cartesLines[j];
 
-            if (math_utils::get_diff(line_i.max.x, line_j.max.x) < m_approximate_diff && math_utils::get_diff(line_i.min.x, line_j.min.x) < m_approximate_diff) {
+            int approximate_eps = get_size_by_y(m_min_approximate_diff, m_max_approximate_diff, line_i.max.y);
+            if (math_utils::get_diff(line_i.max.x, line_j.max.x) < approximate_eps && math_utils::get_diff(line_i.min.x, line_j.min.x) < approximate_eps){
                 same_lines_count++;
                 res_x1 += line_j.max.x;
                 res_x2 += line_j.min.x;
@@ -159,7 +168,7 @@ std::vector<cv_supp::Line> HoughDetector::get_lines_on_cropped(int y_min, int y_
 
         line_i.max.x = res_x1 / same_lines_count;
         line_i.min.x = res_x2 / same_lines_count;
-    }*/
+    }
 
     for (int i = 0; i < cartesLines.size(); i++)
         res_lines.push_back(cv_supp::Line{cartesLines[i], lines[i]});
@@ -202,6 +211,10 @@ void HoughDetector::add_result_point(const cv::Point2i& p) {
 }
 
 bool HoughDetector::is_intersection_neighs(CellPtr c1, CellPtr c2, int same_direction_depth, int neighs_check_depth, CellPtr came_from1, CellPtr came_from2) {
+    if (need_to_print){
+        c1->line.print_cartes();
+        c2->line.print_cartes();
+    }
 
     if (c1->has_intersection || c2->has_intersection)
         return false;
@@ -264,12 +277,20 @@ bool HoughDetector::Cell::is_different_direction_lines(std::shared_ptr<HoughDete
 
     float cos_diff = math_utils::get_diff(c1_cos, c2_cos);
 
+    if (need_to_print)
+        std::cout << "diff_dir cos = " << cos_diff << std::endl;
+
     return cos_diff > m_not_parallel_cos_diff;
 }
 
 bool HoughDetector::is_same_direction_lines(cv_supp::Line l1, cv_supp::Line l2, double same_dir_diff) {
-    return math_utils::get_diff(cv_supp::get_line_cos(l1.cartesLine.max, l1.cartesLine.min),
-                                cv_supp::get_line_cos(l2.cartesLine.max, l2.cartesLine.min)) < same_dir_diff;
+    float cos_diff = math_utils::get_diff(cv_supp::get_line_cos(l1.cartesLine.max, l1.cartesLine.min),
+                                          cv_supp::get_line_cos(l2.cartesLine.max, l2.cartesLine.min));
+
+    if (need_to_print)
+        std::cout << "same_dir cos = " << cos_diff << std::endl;
+
+    return cos_diff < same_dir_diff;
 }
 
 void HoughDetector::package_same_cross_points() {

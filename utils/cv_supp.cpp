@@ -188,7 +188,7 @@ void cv_supp::remove_horizontal_edges(Mat &canny_img) {
                     else
                         break;
                 }
-                if (end - start > 3) {
+                if (end - start > 4) {
                     for (int xx = start; xx <= end; xx++)
                         canny_img.at<uchar>(y, xx) = 0;
                 }
@@ -198,4 +198,9 @@ void cv_supp::remove_horizontal_edges(Mat &canny_img) {
             x++;
         }
     }
+}
+
+void cv_supp::Line::print_cartes() {
+    std::cout << '(' << cartesLine.max.x << ',' << cartesLine.max.y << ')' << " -> ";
+    std::cout << '(' << cartesLine.min.x << ',' << cartesLine.min.y << ')' << std::endl;
 }
