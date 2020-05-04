@@ -15,6 +15,8 @@ namespace cv_supp {
     typedef struct Line {
         CartesLine cartesLine;
         cv::Vec2f polarLine;
+
+        void print_cartes();
     }Line;
 
 	struct gradient_img {

@@ -37,9 +37,11 @@ void run_test(int argc, char** argv) {
         string file_name;
         std::getline(ss, file_name, '.');
 
-        HoughDetector detector(gray_img, lower_thresh_val, high_thresh_val, 20, 7);
-        detector.get_cross_result(); 
+        HoughDetector detector(image, lower_thresh_val, high_thresh_val, 20, 7);
+        detector.get_cross_result();
+        detector.draw_cross_res();
         detector.save_results(results_dir + "/" + file_name + ".txt");
+        waitKey();
     }
 }
 
@@ -74,7 +76,7 @@ int main(int argc, char** argv) {
     double otsu_thresh_val = cv::threshold(gray_img, otsu, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
     double high_thresh_val  = otsu_thresh_val, lower_thresh_val = otsu_thresh_val * 0.5;
 
-    HoughDetector detector(image, lower_thresh_val, high_thresh_val, 20, 7);
+    HoughDetector detector(image, lower_thresh_val, high_thresh_val, 20, 7);//20, 7);
     detector.get_cross_result();
     detector.draw_cross_res();
     detector.save_results("/home/dmitrii/CLionProjects/hough_cross_detector/res.txt");

@@ -199,3 +199,8 @@ void cv_supp::remove_horizontal_edges(Mat &canny_img) {
         }
     }
 }
+
+void cv_supp::Line::print_cartes() {
+    std::cout << '(' << cartesLine.max.x << ", " << cartesLine.max.y << ')' << " -> ";
+    std::cout << '(' << cartesLine.min.x << ", " << cartesLine.min.y << ')' << std::endl;
+}
