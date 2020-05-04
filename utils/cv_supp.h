@@ -24,6 +24,7 @@ namespace cv_supp {
 
 	using hog_vec_t = std::vector<double>;
 
+	void remove_horizontal_edges(cv::Mat& canny_img);
 	gradient_img get_gradients(const cv::Mat& img);
 	std::vector<cv::Mat> get_integral_images(const cv::Mat& img);
 	hog_vec_t get_hog(const cv::Point2i& left_high_hog_point, int hog_size, const std::vector<cv::Mat>& integral_images);

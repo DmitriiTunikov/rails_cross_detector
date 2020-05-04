@@ -17,9 +17,11 @@ public:
     void draw_cross_res();
     void save_results(const std::string& path_to_file);
 private:
-    constexpr static const float m_not_parallel_cos_diff = 0.3;
-    constexpr static const float m_parallel_cos_diff = 0.2;
+    constexpr static const float m_not_parallel_cos_diff = 0.5;
+    constexpr static const float m_parallel_cos_diff = 0.3;
     constexpr static const int m_approximate_diff = 10;
+    constexpr static const int m_big_package_dist = 30;
+    constexpr static const int m_small_package_dist = 10;
 
     struct Cell {
         cv_supp::Line line;
@@ -49,8 +51,10 @@ private:
     int m_min_strip_len;
     std::vector<cv::Point> m_cross_res;
 
-    void solve();
+    std::vector<std::vector<cv::Point>> m_cross_bags;
 
+    void solve();
+    void package_same_cross_points();
     std::vector<cv_supp::Line> get_lines_on_cropped(int y_min, int y_max);
     void add_result_point(const cv::Point2i& point);
     bool is_intersection_neighs(CellPtr c1, CellPtr c2, int same_direction_depth, int neighs_check_depth,

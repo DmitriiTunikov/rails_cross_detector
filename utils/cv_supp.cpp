@@ -20,6 +20,7 @@ gradient_img cv_supp::get_gradients(const cv::Mat& img) {
 }
 
 
+
 std::vector<cv::Mat> cv_supp::get_integral_images(const cv::Mat& img) {
 	gradient_img grad_img = get_gradients(img);
 
@@ -169,4 +170,32 @@ void cv_supp::draw_polar_line(cv::Mat &image, const cv::Vec2f &line, const cv::S
     pt2.y = cvRound(y0 - 1000*(a));
 
     cv::line( image, pt1, pt2, color, 2, LINE_8);
+}
+
+void cv_supp::remove_horizontal_edges(Mat &canny_img) {
+    int start = 0;
+    int end = 0;
+    for (int y = 0; y < canny_img.rows; y++) {
+        int x = 0;
+        while(x < canny_img.cols) {
+            uchar color = canny_img.at<uchar>(y, x);
+            if (color != 0) {
+                start = x;
+                end = x;
+                for (int cur_x = x + 1; cur_x < canny_img.cols; cur_x++) {
+                    if (canny_img.at<uchar>(y, cur_x) != 0)
+                        end++;
+                    else
+                        break;
+                }
+                if (end - start > 3) {
+                    for (int xx = start; xx <= end; xx++)
+                        canny_img.at<uchar>(y, xx) = 0;
+                }
+                x = end + 1;
+                continue;
+            }
+            x++;
+        }
+    }
 }

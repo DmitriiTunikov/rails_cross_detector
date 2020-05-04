@@ -44,13 +44,6 @@ void run_test(int argc, char** argv) {
 }
 
 int main(int argc, char** argv) {
-    std::vector<int> kek{1,2 ,3};
-
-    for (auto it = kek.begin(); it != kek.end(); it++) {
-        if (*it == 2)
-            kek.erase(it);
-    }
-
     if (argc < 2)
     {
         std::cout << "Wrong arguments count, program accept one argument: " <<
@@ -75,7 +68,6 @@ int main(int argc, char** argv) {
     }
 
     cv::cvtColor(image, gray_img, COLOR_BGR2GRAY);
-    int canny_treashhold1 = 130, canny_treashhold2 = 230;
     std::chrono::milliseconds start_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
 
     cv::Mat otsu;
@@ -85,6 +77,7 @@ int main(int argc, char** argv) {
     HoughDetector detector(image, lower_thresh_val, high_thresh_val, 20, 7);
     detector.get_cross_result();
     detector.draw_cross_res();
+    detector.save_results("/home/dmitrii/CLionProjects/hough_cross_detector/res.txt");
 
     std::chrono::milliseconds diff = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()) - start_time;
     std::cout << "time: " << diff.count() << "ms" << std::endl;
