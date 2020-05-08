@@ -57,7 +57,7 @@ private:
     void package_same_cross_points();
     std::vector<cv_supp::Line> get_lines_on_cropped(int y_min, int y_max);
     void add_result_point(const cv::Point2i& point);
-    bool is_intersection_neighs(CellPtr c1, CellPtr c2, int same_direction_depth, int neighs_check_depth,
+    bool is_intersection(CellPtr c1, CellPtr c2, int same_direction_depth, int neighs_check_depth, bool is_neighs_check,
             HoughDetector::CellPtr came_from1 = CellPtr(), HoughDetector::CellPtr came_from2 = CellPtr());
     static bool is_same_direction_lines(cv_supp::Line l1, cv_supp::Line l2, double same_dir_diff = m_parallel_cos_diff);
     int get_size_by_y(int min_len, int max_len, int y);

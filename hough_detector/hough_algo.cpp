@@ -27,7 +27,9 @@ HoughDetector::HoughDetector(cv::Mat &image, int canny_treshhold1, int canny_tre
 
     cv_supp::remove_horizontal_edges(m_canny_image);
 
+//    imshow("original", m_image);
     imshow("canny image", m_canny_image);
+//    waitKey();
 }
 
 std::vector<cv::Point> HoughDetector::get_cross_result() {
@@ -62,15 +64,12 @@ void HoughDetector::solve() {
         std::vector<CellPtr> cur_lines_as_cells;
         std::vector<CellPtr> prev_lines_as_cells = !m_grid.empty() ? m_grid[m_grid.size() - 1] : std::vector<CellPtr>();
         for (cv_supp::Line &line : cur_lines) {
-            if (line.cartesLine.min.x > 400 && line.cartesLine.min.x < 405 && line.cartesLine.min.y == 259)
-                int a = 2;
-
             cv::line(m_all_lines, line.cartesLine.max, line.cartesLine.min, Scalar(0, 0, 255), 1);
 
             CellPtr cur_line_as_cell = std::make_shared<Cell>(line, cur_y - cur_size, cur_y);
             for (CellPtr prev_line_as_cell : prev_lines_as_cells) {
                 //const int diff_eps = 3;
-                if (abs(cur_line_as_cell->line.cartesLine.max.x - prev_line_as_cell->line.cartesLine.min.x) < get_size_by_y(3, 5, cur_y)) {
+                if (abs(cur_line_as_cell->line.cartesLine.max.x - prev_line_as_cell->line.cartesLine.min.x) < get_size_by_y(3, 10, cur_y)) {
                     prev_line_as_cell->neighs.push_back(cur_line_as_cell);
                     cur_line_as_cell->parents.push_back(prev_line_as_cell);
                     cur_line_as_cell->has_parent = true;
@@ -88,21 +87,34 @@ void HoughDetector::solve() {
     for (int i = 0; i < m_grid.size() - 2; i++) {
         for (int cell_idx = 0; cell_idx < m_grid[i].size(); cell_idx++) {
             CellPtr cur_cell = m_grid[i][cell_idx];
-            if (cur_cell->line.cartesLine.min.x > 400 && cur_cell->line.cartesLine.min.x < 405 && cur_cell->line.cartesLine.min.y == 259)
-                int a = 2;
+//            if (cur_cell->line.cartesLine.max.x == 380 && cur_cell->line.cartesLine.max.y == 327)
+//                int a = 2;
 
-//            if (!cur_cell->has_same_direction(cur_cell->parents, m_parallel_cos_diff))
-//                continue;
+            if (!cur_cell->has_same_direction(cur_cell->parents, m_parallel_cos_diff))
+                continue;
 
             //if has neighs with different directions and every neigh has neigh with same direction as neigh, then it is intersection point!
+            const int same_dir_depth = 2;
+            const int check_neighs_depth = 2;
             std::vector<CellPtr> &neighs = cur_cell->neighs;
             if (neighs.size() > 1) {
                 for (int k = 0; k < neighs.size(); k++) {
                     for (int m = k + 1; m < neighs.size(); m++) {
-//                        if (is_same_direction_lines(cur_cell->line, neighs[k]->line) ||
-//                            is_same_direction_lines(cur_cell->line, neighs[m]->line)) {
-                        if (is_intersection_neighs(neighs[k], neighs[m], 2, 2)) {
+                        if (is_intersection(neighs[k], neighs[m], same_dir_depth, check_neighs_depth, true)) {
                             add_result_point(cur_cell->line.cartesLine.min);
+                            cv::line(m_all_lines, cur_cell->line.cartesLine.min, cur_cell->line.cartesLine.max,
+                                     Scalar(255, 255, 255));
+                        }
+                    }
+                }
+            }
+
+            std::vector<CellPtr> &parents = cur_cell->parents;
+            if (parents.size() > 1) {
+                for (int k = 0; k < parents.size(); k++) {
+                    for (int m = k + 1; m < parents.size(); m++) {
+                        if (is_intersection(parents[k], parents[m], same_dir_depth, check_neighs_depth, false)) {
+                            add_result_point(cur_cell->line.cartesLine.max);
                             cv::line(m_all_lines, cur_cell->line.cartesLine.min, cur_cell->line.cartesLine.max,
                                      Scalar(255, 255, 255));
                         }
@@ -111,7 +123,7 @@ void HoughDetector::solve() {
             }
         }
     }
-    //package_same_cross_points();
+    package_same_cross_points();
     imshow("all lines", m_all_lines);
 }
 
@@ -134,7 +146,7 @@ std::vector<cv_supp::Line> HoughDetector::get_lines_on_cropped(int y_min, int y_
         cartesLines[cartesLines.size() - 1].min.y = y_min;
     }
 
-    //approximate same lines by only one line
+    //approximate near lines by only one line
     /*
     int cur_size = cartesLines.size();
     for (int i = 0; i < cur_size; i++) {
@@ -201,8 +213,8 @@ void HoughDetector::add_result_point(const cv::Point2i& p) {
     m_cross_res.push_back(p);
 }
 
-bool HoughDetector::is_intersection_neighs(CellPtr c1, CellPtr c2, int same_direction_depth, int neighs_check_depth, CellPtr came_from1, CellPtr came_from2) {
-
+bool HoughDetector::is_intersection(CellPtr c1, CellPtr c2, int same_direction_depth, int neighs_check_depth, bool is_neighs_check,
+        CellPtr came_from1, CellPtr came_from2) {
     if (c1->has_intersection || c2->has_intersection)
         return false;
 
@@ -219,25 +231,27 @@ bool HoughDetector::is_intersection_neighs(CellPtr c1, CellPtr c2, int same_dire
     }
 
     if (HoughDetector::Cell::is_different_direction_lines(c1, c2)) {
-//        cv::line(m_all_lines, c1->line.cartesLine.min, c1->line.cartesLine.max, Scalar(0, 0, 0));
-//        cv::line(m_all_lines, c2->line.cartesLine.min, c2->line.cartesLine.max, Scalar(0, 0, 0));
-//        return true;
-        bool both_has_same_direction_neighs = c1->has_same_direction(c1->neighs) && c2->has_same_direction(c2->neighs);
+        bool both_has_same_direction_neighs = c1->has_same_direction(is_neighs_check ? c1->neighs : c1->parents)
+                && c2->has_same_direction(is_neighs_check ? c2->neighs : c2->parents);
+
         if (both_has_same_direction_neighs) {
-            CellPtr c1_neigh = c1->get_same_direction(c1->neighs);
-            CellPtr c2_neigh = c2->get_same_direction(c2->neighs);
-            if (c1_neigh->has_same_direction(c1_neigh->neighs) && c2_neigh->has_same_direction(c2_neigh->neighs))
-            {
-                 return is_intersection_neighs(c1->get_same_direction(c1->neighs), c2->get_same_direction((c2->neighs)),
-                                          same_direction_depth - 1, neighs_check_depth, c1, c2);
-            }
+            CellPtr c1_neigh = c1->get_same_direction(is_neighs_check ? c1->neighs : c1->parents);
+            CellPtr c2_neigh = c2->get_same_direction(is_neighs_check ? c2->neighs : c2->parents);
+            return is_intersection(c1_neigh, c2_neigh,same_direction_depth - 1, neighs_check_depth, is_neighs_check, c1, c2);
+//            if (c1_neigh->has_same_direction(is_neighs_check ? c1_neigh->neighs : c1_neigh->parents)
+//                && c2_neigh->has_same_direction(is_neighs_check ? c2_neigh->neighs : c2_neigh->parents))
+//            {
+//                 return is_intersection(c1->get_same_direction(is_neighs_check ? c1->neighs : c1->parents),
+//                                                            c2->get_same_direction(is_neighs_check ? c2->neighs : c2->parents),
+//                                          same_direction_depth - 1, neighs_check_depth, is_neighs_check, c1, c2);
+//            }
         }
     }
     if (neighs_check_depth > 1){
-        CellPtr c1_neigh = c1->get_same_direction(c1->neighs);
-        CellPtr c2_neigh = c2->get_same_direction(c2->neighs);
+        CellPtr c1_neigh = c1->get_same_direction(is_neighs_check ? c1->neighs : c1->parents);
+        CellPtr c2_neigh = c2->get_same_direction(is_neighs_check ? c2->neighs : c2->parents);
         if (c1_neigh && c2_neigh)
-            return is_intersection_neighs(c1_neigh, c2_neigh, 1, neighs_check_depth - 1, c1, c2);
+            return is_intersection(c1_neigh, c2_neigh, 1, neighs_check_depth - 1, is_neighs_check, c1, c2);
     }
 
     return false;

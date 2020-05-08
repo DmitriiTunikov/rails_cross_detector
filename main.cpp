@@ -24,10 +24,15 @@ void run_test(int argc, char** argv) {
     files_utils::create_dir(results_dir);
 
     vector<files_utils::FileName> image_file_names = files_utils::get_files_from_dir(images_dir);
+    int i = 0;
     for (files_utils::FileName& image_file_name : image_file_names) {
+        std::cout << i << std::endl;
+        i++;
+
         cv::Mat image = imread(image_file_name.path, IMREAD_COLOR);
         cv::Mat gray_img;
         cv::cvtColor(image, gray_img, COLOR_BGR2GRAY);
+
         cv::Mat otsu;
         double otsu_thresh_val = cv::threshold(gray_img, otsu, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
         double high_thresh_val  = otsu_thresh_val, lower_thresh_val = otsu_thresh_val * 0.5;
@@ -37,10 +42,47 @@ void run_test(int argc, char** argv) {
         string file_name;
         std::getline(ss, file_name, '.');
 
-        HoughDetector detector(gray_img, lower_thresh_val, high_thresh_val, 20, 7);
-        detector.get_cross_result(); 
+        HoughDetector detector(image, lower_thresh_val, high_thresh_val, 45, 7);
+        detector.get_cross_result();
+        detector.draw_cross_res();
+        cv::imwrite(results_dir + "/" + file_name + ".jpg", image);
         detector.save_results(results_dir + "/" + file_name + ".txt");
     }
+}
+
+void expirement_with_horizontal_blocks(std::string file_name) {
+    cv::Mat image, gray_img;
+    image = imread(file_name, IMREAD_COLOR);
+    if (!image.data)
+    {
+        throw std::runtime_error("Could not open or find input file");
+    }
+    cv::cvtColor(image, gray_img, COLOR_BGR2GRAY);
+
+    std::chrono::milliseconds start_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
+
+    cv::Mat otsu;
+    double otsu_thresh_val = cv::threshold(gray_img, otsu, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+    double high_thresh_val  = otsu_thresh_val, lower_thresh_val = otsu_thresh_val * 0.5;
+
+    for (int max_len = 25; max_len < 50; max_len += 5)
+        for (int min_len = 7; min_len < 20; min_len += 2)
+        {
+            start_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
+
+            std::cout << "max: " << max_len << ", min: " << min_len << std::endl;
+            image = imread(file_name, IMREAD_COLOR);
+            HoughDetector detector(image, lower_thresh_val, high_thresh_val, max_len, min_len);
+            detector.get_cross_result();
+            detector.draw_cross_res();
+            std::string save_file_name = "/home/dmitrii/CLionProjects/hough_cross_detector/max_min_res/"
+                                         + std::to_string(max_len) + "_" + std::to_string(min_len);
+
+            imwrite(save_file_name + ".jpg", image);
+            detector.save_results(save_file_name + ".txt");
+            std::chrono::milliseconds diff = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()) - start_time;
+            std::cout << "time: " << diff.count() << "ms" << std::endl;
+        }
 }
 
 int main(int argc, char** argv) {
@@ -74,10 +116,9 @@ int main(int argc, char** argv) {
     double otsu_thresh_val = cv::threshold(gray_img, otsu, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
     double high_thresh_val  = otsu_thresh_val, lower_thresh_val = otsu_thresh_val * 0.5;
 
-    HoughDetector detector(image, lower_thresh_val, high_thresh_val, 20, 7);
+    HoughDetector detector(image, lower_thresh_val, high_thresh_val, 45, 7);
     detector.get_cross_result();
     detector.draw_cross_res();
-    detector.save_results("/home/dmitrii/CLionProjects/hough_cross_detector/res.txt");
 
     std::chrono::milliseconds diff = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()) - start_time;
     std::cout << "time: " << diff.count() << "ms" << std::endl;
