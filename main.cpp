@@ -16,19 +16,16 @@ void run_test(int argc, char** argv) {
 
         throw std::runtime_error(reinterpret_cast<const char *>("wrong input args"));
     }
-
-    int canny_treashhold1 = 130, canny_treashhold2 = 230;
-
     string images_dir = argv[1], results_dir = argv[2];
     files_utils::remove_dir(results_dir);
     files_utils::create_dir(results_dir);
 
     vector<files_utils::FileName> image_file_names = files_utils::get_files_from_dir(images_dir);
     int i = 0;
+    std::chrono::milliseconds start_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
     for (files_utils::FileName& image_file_name : image_file_names) {
         std::cout << i << std::endl;
         i++;
-
         cv::Mat image = imread(image_file_name.path, IMREAD_COLOR);
         cv::Mat gray_img;
         cv::cvtColor(image, gray_img, COLOR_BGR2GRAY);
@@ -45,9 +42,11 @@ void run_test(int argc, char** argv) {
         HoughDetector detector(image, lower_thresh_val, high_thresh_val, 45, 7);
         detector.get_cross_result();
         detector.draw_cross_res();
-        cv::imwrite(results_dir + "/" + file_name + ".jpg", image);
+        //cv::imwrite(results_dir + "/" + file_name + ".jpg", image);
         detector.save_results(results_dir + "/" + file_name + ".txt");
     }
+    std::chrono::milliseconds diff = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()) - start_time;
+    std::cout << "mean time: " << diff.count() / image_file_names.size() << "ms" << std::endl;
 }
 
 void expirement_with_horizontal_blocks(std::string file_name) {

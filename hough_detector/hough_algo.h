@@ -17,7 +17,7 @@ public:
     void draw_cross_res();
     void save_results(const std::string& path_to_file);
 private:
-    constexpr static const float m_not_parallel_cos_diff = 0.5;
+    constexpr static const float m_not_parallel_cos_diff = 0.5;//0.2;//0.5;
     constexpr static const float m_parallel_cos_diff = 0.3;
     constexpr static const int m_approximate_diff = 10;
     constexpr static const int m_big_package_dist = 30;
@@ -34,9 +34,9 @@ private:
         explicit Cell(const cv_supp::Line& line_, const int y_min_, const int y_max_) : line(line_), y_min(y_min_), y_max(y_max_), has_parent(false),
                                                                                         has_intersection(false) {};
 
-        bool has_same_direction(std::vector<std::shared_ptr<Cell>> elems, double same_dir_diff = m_parallel_cos_diff);
-        std::shared_ptr<Cell> get_same_direction(std::vector<std::shared_ptr<Cell>> elems);
-        static bool is_different_direction_lines(std::shared_ptr<Cell> c1, std::shared_ptr<Cell> c2);
+        static bool has_same_direction(std::shared_ptr<Cell> cell, std::vector<std::shared_ptr<Cell>> elems, int image_height);
+        static std::shared_ptr<Cell> get_same_direction(std::shared_ptr<Cell> cell, std::vector<std::shared_ptr<Cell>> elems, int image_height);
+        static bool is_different_direction_lines(std::shared_ptr<Cell> c1, std::shared_ptr<Cell> c2, int image_height);
     };
 
     using CellPtr = std::shared_ptr<Cell>;
@@ -59,8 +59,8 @@ private:
     void add_result_point(const cv::Point2i& point);
     bool is_intersection(CellPtr c1, CellPtr c2, int same_direction_depth, int neighs_check_depth, bool is_neighs_check,
             HoughDetector::CellPtr came_from1 = CellPtr(), HoughDetector::CellPtr came_from2 = CellPtr());
-    static bool is_same_direction_lines(cv_supp::Line l1, cv_supp::Line l2, double same_dir_diff = m_parallel_cos_diff);
     int get_size_by_y(int min_len, int max_len, int y);
+    static float get_size_by_y_float(float min_len, float max_len, int y, int image_height, int sign);
 };
 
 

@@ -64,6 +64,9 @@ void HoughDetector::solve() {
         std::vector<CellPtr> cur_lines_as_cells;
         std::vector<CellPtr> prev_lines_as_cells = !m_grid.empty() ? m_grid[m_grid.size() - 1] : std::vector<CellPtr>();
         for (cv_supp::Line &line : cur_lines) {
+            if (line.cartesLine.max.x == 395 && line.cartesLine.max.y == 310)
+                int a = 2;
+
             cv::line(m_all_lines, line.cartesLine.max, line.cartesLine.min, Scalar(0, 0, 255), 1);
 
             CellPtr cur_line_as_cell = std::make_shared<Cell>(line, cur_y - cur_size, cur_y);
@@ -87,10 +90,10 @@ void HoughDetector::solve() {
     for (int i = 0; i < m_grid.size() - 2; i++) {
         for (int cell_idx = 0; cell_idx < m_grid[i].size(); cell_idx++) {
             CellPtr cur_cell = m_grid[i][cell_idx];
-//            if (cur_cell->line.cartesLine.max.x == 380 && cur_cell->line.cartesLine.max.y == 327)
-//                int a = 2;
+            if (cur_cell->line.cartesLine.max.x == 308 && cur_cell->line.cartesLine.max.y == 217)
+                int a = 2;
 
-            if (!cur_cell->has_same_direction(cur_cell->parents, m_parallel_cos_diff))
+            if (!cur_cell->has_same_direction(cur_cell, cur_cell->parents, m_image.rows))
                 continue;
 
             //if has neighs with different directions and every neigh has neigh with same direction as neigh, then it is intersection point!
@@ -230,26 +233,13 @@ bool HoughDetector::is_intersection(CellPtr c1, CellPtr c2, int same_direction_d
         return true;
     }
 
-    if (HoughDetector::Cell::is_different_direction_lines(c1, c2)) {
-        bool both_has_same_direction_neighs = c1->has_same_direction(is_neighs_check ? c1->neighs : c1->parents)
-                && c2->has_same_direction(is_neighs_check ? c2->neighs : c2->parents);
-
-        if (both_has_same_direction_neighs) {
-            CellPtr c1_neigh = c1->get_same_direction(is_neighs_check ? c1->neighs : c1->parents);
-            CellPtr c2_neigh = c2->get_same_direction(is_neighs_check ? c2->neighs : c2->parents);
+    CellPtr c1_neigh = HoughDetector::Cell::get_same_direction(c1, is_neighs_check ? c1->neighs : c1->parents, m_image.rows);
+    CellPtr c2_neigh = HoughDetector::Cell::get_same_direction(c2, is_neighs_check ? c2->neighs : c2->parents, m_image.rows);
+    if (HoughDetector::Cell::is_different_direction_lines(c1, c2, m_image.rows)) {
+        if (c1_neigh && c2_neigh)
             return is_intersection(c1_neigh, c2_neigh,same_direction_depth - 1, neighs_check_depth, is_neighs_check, c1, c2);
-//            if (c1_neigh->has_same_direction(is_neighs_check ? c1_neigh->neighs : c1_neigh->parents)
-//                && c2_neigh->has_same_direction(is_neighs_check ? c2_neigh->neighs : c2_neigh->parents))
-//            {
-//                 return is_intersection(c1->get_same_direction(is_neighs_check ? c1->neighs : c1->parents),
-//                                                            c2->get_same_direction(is_neighs_check ? c2->neighs : c2->parents),
-//                                          same_direction_depth - 1, neighs_check_depth, is_neighs_check, c1, c2);
-//            }
-        }
     }
     if (neighs_check_depth > 1){
-        CellPtr c1_neigh = c1->get_same_direction(is_neighs_check ? c1->neighs : c1->parents);
-        CellPtr c2_neigh = c2->get_same_direction(is_neighs_check ? c2->neighs : c2->parents);
         if (c1_neigh && c2_neigh)
             return is_intersection(c1_neigh, c2_neigh, 1, neighs_check_depth - 1, is_neighs_check, c1, c2);
     }
@@ -262,28 +252,27 @@ int HoughDetector::get_size_by_y(int min_len, int max_len, int y) {
     return min_len + (float(max_len) - min_len) / (m_image.rows - max_len) * y;
 }
 
-std::shared_ptr<HoughDetector::Cell> HoughDetector::Cell::get_same_direction(std::vector<std::shared_ptr<Cell>> elems) {
+std::shared_ptr<HoughDetector::Cell> HoughDetector::Cell::get_same_direction(std::shared_ptr<Cell> cell, std::vector<std::shared_ptr<Cell>> elems,
+        int image_height) {
     for (CellPtr neigh : elems) {
-        if (math_utils::get_diff(cv_supp::get_line_cos(line.cartesLine.max, line.cartesLine.min),
-                                 cv_supp::get_line_cos(neigh->line.cartesLine.max, neigh->line.cartesLine.min)) < m_parallel_cos_diff)
+        if (!is_different_direction_lines(cell, neigh, image_height))
             return neigh;
     }
 
     return std::shared_ptr<Cell>();
 }
 
-bool HoughDetector::Cell::is_different_direction_lines(std::shared_ptr<HoughDetector::Cell> c1, std::shared_ptr<HoughDetector::Cell> c2) {
+bool HoughDetector::Cell::is_different_direction_lines(std::shared_ptr<HoughDetector::Cell> c1, std::shared_ptr<HoughDetector::Cell> c2, int image_height) {
+    if (c1->line.cartesLine.max.x == 410 && c1->line.cartesLine.max.y == 192 &&
+            c2->line.cartesLine.max.x == 432 && c2->line.cartesLine.max.y == 192)
+        int a = 0;
     float c1_cos = cv_supp::get_line_cos(c1->line.cartesLine.max, c1->line.cartesLine.min);
     float c2_cos = cv_supp::get_line_cos(c2->line.cartesLine.max, c2->line.cartesLine.min);
 
     float cos_diff = math_utils::get_diff(c1_cos, c2_cos);
 
-    return cos_diff > m_not_parallel_cos_diff;
-}
-
-bool HoughDetector::is_same_direction_lines(cv_supp::Line l1, cv_supp::Line l2, double same_dir_diff) {
-    return math_utils::get_diff(cv_supp::get_line_cos(l1.cartesLine.max, l1.cartesLine.min),
-                                cv_supp::get_line_cos(l2.cartesLine.max, l2.cartesLine.min)) < same_dir_diff;
+    float parallel_cos_diff = get_size_by_y_float(0.01, 0.4, c1->line.cartesLine.max.y, image_height, -1);
+    return cos_diff > parallel_cos_diff;
 }
 
 void HoughDetector::package_same_cross_points() {
@@ -291,15 +280,16 @@ void HoughDetector::package_same_cross_points() {
 
     for (auto it1 = m_cross_res.begin(); it1 != m_cross_res.end(); it1++) {
         bags.push_back(std::vector<cv::Point>{*it1});
-        for (auto it2 = it1 + 1; it2 != m_cross_res.end(); it2++) {
+        for (auto it2 = it1 + 1; it2 != m_cross_res.end();) {
             int x_diff = abs(it1->x - it2->x), y_diff = abs(it1->y - it2->y);
             int dist = sqrt(x_diff * x_diff + y_diff * y_diff);
             int min_dist_in_bag = (it1->y > 0.2 * m_image.rows ? m_big_package_dist : m_small_package_dist);
             if (dist < min_dist_in_bag) {
                 bags[bags.size() - 1].push_back(*it2);
                 m_cross_res.erase(it2);
-                it2--;
             }
+            else
+                it2++;
         }
     }
 
@@ -324,10 +314,22 @@ void HoughDetector::package_same_cross_points() {
         package_same_cross_points();
 }
 
-bool HoughDetector::Cell::has_same_direction(std::vector<std::shared_ptr<Cell>> elems, double same_dir_diff) {
+float HoughDetector::get_size_by_y_float(float min_len, float max_len, int y, int image_height, int sign) {
+    if (sign < 0)
+        return max_len - (max_len - min_len) / image_height * y;
+    else
+        return min_len + (max_len - min_len) / image_height * y;
+//    return min_len + (max_len - min_len) / image_height / (image_height - y);
+}
+
+
+
+bool HoughDetector::Cell::has_same_direction(std::shared_ptr<Cell> cell, std::vector<std::shared_ptr<Cell>> elems, int image_height) {
     for (CellPtr parent : elems) {
-        if (HoughDetector::is_same_direction_lines(line, parent->line))
+        if (!is_different_direction_lines(parent, cell, image_height))
             return true;
+//        if (HoughDetector::is_same_direction_lines(line, parent->line, image_height))
+//            return true;
     }
 
     return false;
