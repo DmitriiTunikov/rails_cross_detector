@@ -19,7 +19,8 @@ public:
 private:
     constexpr static const float m_not_parallel_cos_diff = 0.5;//0.2;//0.5;
     constexpr static const float m_parallel_cos_diff = 0.3;
-    constexpr static const int m_approximate_diff = 10;
+    constexpr static const int m_min_approximate_diff = 10;
+    constexpr static const int m_max_approximate_diff = 20;
     constexpr static const int m_big_package_dist = 40;
     constexpr static const int m_small_package_dist = 10;
 
@@ -36,7 +37,7 @@ private:
 
         static bool has_same_direction(std::shared_ptr<Cell> cell, std::vector<std::shared_ptr<Cell>> elems, int image_height);
         static std::shared_ptr<Cell> get_same_direction(std::shared_ptr<Cell> cell, std::vector<std::shared_ptr<Cell>> elems, int image_height);
-        static bool is_different_direction_lines(std::shared_ptr<Cell> c1, std::shared_ptr<Cell> c2, int image_height);
+        static bool is_different_direction_lines(std::shared_ptr<Cell> c1, std::shared_ptr<Cell> c2, int image_height,  bool parallel_check = false);
     };
 
     using CellPtr = std::shared_ptr<Cell>;
