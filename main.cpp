@@ -39,9 +39,9 @@ void run_test(int argc, char** argv) {
         string file_name;
         std::getline(ss, file_name, '.');
 
-        HoughDetector detector(image, lower_thresh_val, high_thresh_val, 45, 7);
+        HoughDetector detector(image, lower_thresh_val, high_thresh_val, 45, 20);//45, 7);
         detector.get_cross_result();
-        detector.draw_cross_res();
+//        detector.draw_cross_res();
         //cv::imwrite(results_dir + "/" + file_name + ".jpg", image);
         detector.save_results(results_dir + "/" + file_name + ".txt");
     }

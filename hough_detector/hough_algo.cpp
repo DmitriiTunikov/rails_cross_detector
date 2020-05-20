@@ -12,6 +12,7 @@
 #include <fstream>
 
 using namespace cv;
+extern bool need_to_plot = true;
 
 HoughDetector::HoughDetector(cv::Mat &image, int canny_treshhold1, int canny_treshhold2, int max_strip_len,
                              int min_strip_len) : m_canny_treshhold1(canny_treshhold1), m_canny_treshhold2(canny_treshhold2),
@@ -21,15 +22,16 @@ HoughDetector::HoughDetector(cv::Mat &image, int canny_treshhold1, int canny_tre
     //crop 1/5 of iamge
     cv::Rect crop(Point(0, image.rows / 5), Point(image.cols, image.rows));
     m_image = image(crop);
+//    cv::Mat resize_image, resize_canny;
+//    cv::resize(m_image, resize_image, Size(m_image.cols / 2, m_image.rows / 2));
 
     //make canny edge detection and remove all horisontal lines
     Canny(m_image, m_canny_image, canny_treshhold1, canny_treshhold2);
+//    Canny(resize_image, resize_canny, canny_treshhold1, canny_treshhold2);
 
     cv_supp::remove_horizontal_edges(m_canny_image);
-
-//    imshow("original", m_image);
     imshow("canny image", m_canny_image);
-//    waitKey();
+//    imshow("canny resize", resize_canny);
 }
 
 std::vector<cv::Point> HoughDetector::get_cross_result() {
@@ -45,7 +47,8 @@ void HoughDetector::solve() {
     int cur_y = m_image.rows - 1;
     int cur_size = 0;
 
-    m_image.copyTo(m_all_lines);
+    if (need_to_plot)
+        m_image.copyTo(m_all_lines);
 
     //generate grid
     int q = -1;
@@ -57,17 +60,20 @@ void HoughDetector::solve() {
             break;
 
         std::vector<cv_supp::Line> cur_lines = get_lines_on_cropped(cur_y - cur_size, cur_y);
-        line(m_all_lines, Point2i(0, cur_y), Point2i(m_image.cols, cur_y), Scalar(255, 0, 0), 1);
-        cv::putText(m_all_lines, std::to_string(q), Point2i(0, cur_y), 1, 1, Scalar(255 ,0, 0));
+        if (need_to_plot){
+            line(m_all_lines, Point2i(0, cur_y), Point2i(m_image.cols, cur_y), Scalar(255, 0, 0), 1);
+            cv::putText(m_all_lines, std::to_string(q), Point2i(0, cur_y), 1, 1, Scalar(255 ,0, 0));
+        }
 
         std::map<int, std::vector<CellPtr>> new_cells_map;
         std::vector<CellPtr> cur_lines_as_cells;
         std::vector<CellPtr> prev_lines_as_cells = !m_grid.empty() ? m_grid[m_grid.size() - 1] : std::vector<CellPtr>();
         for (cv_supp::Line &line : cur_lines) {
-            if (line.cartesLine.max.x == 395 && line.cartesLine.max.y == 310)
-                int a = 2;
+//            if (line.cartesLine.max.x == 395 && line.cartesLine.max.y == 310)
+//                int a = 2;
 
-            cv::line(m_all_lines, line.cartesLine.max, line.cartesLine.min, Scalar(0, 0, 255), 1);
+            if (need_to_plot)
+                cv::line(m_all_lines, line.cartesLine.max, line.cartesLine.min, Scalar(0, 0, 255), 1);
 
             CellPtr cur_line_as_cell = std::make_shared<Cell>(line, cur_y - cur_size, cur_y);
             for (CellPtr prev_line_as_cell : prev_lines_as_cells) {
@@ -90,8 +96,8 @@ void HoughDetector::solve() {
     for (int i = 0; i < m_grid.size() - 2; i++) {
         for (int cell_idx = 0; cell_idx < m_grid[i].size(); cell_idx++) {
             CellPtr cur_cell = m_grid[i][cell_idx];
-            if (cur_cell->line.cartesLine.max.x == 308 && cur_cell->line.cartesLine.max.y == 217)
-                int a = 2;
+//            if (cur_cell->line.cartesLine.max.x == 308 && cur_cell->line.cartesLine.max.y == 217)
+//                int a = 2;
 
             if (!cur_cell->has_same_direction(cur_cell, cur_cell->parents, m_image.rows))
                 continue;
@@ -105,7 +111,8 @@ void HoughDetector::solve() {
                     for (int m = k + 1; m < neighs.size(); m++) {
                         if (is_intersection(neighs[k], neighs[m], same_dir_depth, check_neighs_depth, true)) {
                             add_result_point(cur_cell->line.cartesLine.min);
-                            cv::line(m_all_lines, cur_cell->line.cartesLine.min, cur_cell->line.cartesLine.max,
+                            if (need_to_plot)
+                               cv::line(m_all_lines, cur_cell->line.cartesLine.min, cur_cell->line.cartesLine.max,
                                      Scalar(255, 255, 255));
                         }
                     }
@@ -118,7 +125,8 @@ void HoughDetector::solve() {
                     for (int m = k + 1; m < parents.size(); m++) {
                         if (is_intersection(parents[k], parents[m], same_dir_depth, check_neighs_depth, false)) {
                             add_result_point(cur_cell->line.cartesLine.max);
-                            cv::line(m_all_lines, cur_cell->line.cartesLine.min, cur_cell->line.cartesLine.max,
+                            if (need_to_plot)
+                              cv::line(m_all_lines, cur_cell->line.cartesLine.min, cur_cell->line.cartesLine.max,
                                      Scalar(255, 255, 255));
                         }
                     }
@@ -126,8 +134,10 @@ void HoughDetector::solve() {
             }
         }
     }
+
     package_same_cross_points();
-    imshow("all lines", m_all_lines);
+    if (need_to_plot)
+        imshow("all lines", m_all_lines);
 }
 
 
@@ -228,8 +238,10 @@ bool HoughDetector::is_intersection(CellPtr c1, CellPtr c2, int same_direction_d
         c1->has_intersection = true;
         c1->has_intersection = true;
 
-        cv::line(m_all_lines, came_from1->line.cartesLine.min, came_from1->line.cartesLine.max, Scalar(0, 255, 255));
-        cv::line(m_all_lines, came_from2->line.cartesLine.min, came_from2->line.cartesLine.max, Scalar(0, 255, 255));
+        if (need_to_plot) {
+            cv::line(m_all_lines, came_from1->line.cartesLine.min, came_from1->line.cartesLine.max, Scalar(0, 255, 255));
+            cv::line(m_all_lines, came_from2->line.cartesLine.min, came_from2->line.cartesLine.max, Scalar(0, 255, 255));
+        }
         return true;
     }
 
@@ -263,9 +275,6 @@ std::shared_ptr<HoughDetector::Cell> HoughDetector::Cell::get_same_direction(std
 }
 
 bool HoughDetector::Cell::is_different_direction_lines(std::shared_ptr<HoughDetector::Cell> c1, std::shared_ptr<HoughDetector::Cell> c2, int image_height) {
-    if (c1->line.cartesLine.max.x == 410 && c1->line.cartesLine.max.y == 192 &&
-            c2->line.cartesLine.max.x == 432 && c2->line.cartesLine.max.y == 192)
-        int a = 0;
     float c1_cos = cv_supp::get_line_cos(c1->line.cartesLine.max, c1->line.cartesLine.min);
     float c2_cos = cv_supp::get_line_cos(c2->line.cartesLine.max, c2->line.cartesLine.min);
 
@@ -283,7 +292,7 @@ void HoughDetector::package_same_cross_points() {
         for (auto it2 = it1 + 1; it2 != m_cross_res.end();) {
             int x_diff = abs(it1->x - it2->x), y_diff = abs(it1->y - it2->y);
             int dist = sqrt(x_diff * x_diff + y_diff * y_diff);
-            int min_dist_in_bag = (it1->y > 0.2 * m_image.rows ? m_big_package_dist : m_small_package_dist);
+            int min_dist_in_bag = get_size_by_y(m_small_package_dist, m_big_package_dist, it1->y);//(it1->y > 0.2 * m_image.rows ? m_big_package_dist : m_small_package_dist);
             if (dist < min_dist_in_bag) {
                 bags[bags.size() - 1].push_back(*it2);
                 m_cross_res.erase(it2);

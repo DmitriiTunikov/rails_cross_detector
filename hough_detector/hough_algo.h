@@ -20,7 +20,7 @@ private:
     constexpr static const float m_not_parallel_cos_diff = 0.5;//0.2;//0.5;
     constexpr static const float m_parallel_cos_diff = 0.3;
     constexpr static const int m_approximate_diff = 10;
-    constexpr static const int m_big_package_dist = 30;
+    constexpr static const int m_big_package_dist = 40;
     constexpr static const int m_small_package_dist = 10;
 
     struct Cell {
