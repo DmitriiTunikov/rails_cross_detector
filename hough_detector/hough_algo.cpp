@@ -314,7 +314,7 @@ void HoughDetector::package_same_cross_points() {
             int min_dist_in_bag = get_size_by_y(m_small_package_dist, m_big_package_dist, it1->y);//(it1->y > 0.2 * m_image.rows ? m_big_package_dist : m_small_package_dist);
             if (dist < min_dist_in_bag) {
                 bags[bags.size() - 1].push_back(*it2);
-                m_cross_res.erase(it2);
+                it2 = m_cross_res.erase(it2);
             }
             else
                 it2++;
